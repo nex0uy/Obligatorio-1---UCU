@@ -1,0 +1,117 @@
+#=============================== PROGRAMA QUE VERIFICA UN XML SOBRE TIEMPO Y DEVUELVE LA INFORMACION UTIL ===============================#
+
+#================================ Funcion que llama al XML desde el servidor web ====================================#
+def XML(ubicacion):
+    import urllib.request
+    url = "http://api.openweathermap.org/data/2.5/weather"
+    APPID = "13e13d4dd6fdcc4d7fcde335109b74f8"
+    modo = "xml"
+    response = urllib.request.urlopen(url + "?q=" + ubicacion + "&APPID=" + APPID + "&mode=" + modo);
+    cad = response.read().decode("UTF-8")
+    return cad
+#====================== Funcion que acomoda los datos utiles en sus variables correspondientes ======================#
+def set_datos(cad):
+    Verificador_EsIgual = 0  #___________________ Verificador del numero de "=".
+    Lugar_de_info = 0  #_________________________ Es el lugar de la informacion que quiero.
+    for i in range(len(cad)):  #_________________ Verifica toda la cadena.
+        if cad[i] is "=" and Verificador_EsIgual == Lugar_de_info:
+            i += 2  #____________________________ Si se cumple la condiciones anterior avanza 2 lugares a donde se encuentra el mensaje.
+            aux = ""  #__________________________ Variable que contiene la info.
+            Verificador_EsIgual += 1  #__________ La proxima vez busca el proximo "=".
+            Lugar_de_info += 1  #________________ La proxima vez busca el siguiente lugar de informacion.
+            while cad[i] != '"':  #______________ Imprime lo que esta entre comillas.
+                aux = aux + cad[i]
+                i += 1
+                if Verificador_EsIgual == 2: #___ Las siguientes condiciones ordenan la informacion en variables para luego crear el objeto
+                    datos_city = aux
+                if Verificador_EsIgual == 3:
+                    datos_coord_lon = aux
+                if Verificador_EsIgual == 4:
+                    datos_coord_lat = aux
+                if Verificador_EsIgual == 5:
+                    datos_fecha = aux[8:10] + "-" + aux[5:7] + "-" + aux[0:4] #_ DIA-MES-YEAR
+                    datos_sun_rise = aux[11:20]  #_HORA.
+                if Verificador_EsIgual == 6:
+                    datos_sun_set = aux[11:20]   #_HORA.
+                if Verificador_EsIgual == 7:
+                    datos_value = str(int(float(aux) - 273.15)) + "°C"
+                if Verificador_EsIgual == 8:
+                    datos_min = str(int(float(aux) - 273.15)) + "°C"
+                if Verificador_EsIgual == 9:
+                    datos_max = str(int(float(aux) - 273.15)) + "°C"
+                if Verificador_EsIgual == 13:
+                    datos_pressure = aux + " hPa"
+                if Verificador_EsIgual == 11:
+                    datos_humidity = aux + " %"
+                if Verificador_EsIgual == 15:
+                    datos_speed = aux + " m/s"
+                if Verificador_EsIgual == 16:
+                    datos_speed_tipo = aux
+                if Verificador_EsIgual == 17:
+                    grados = aux + "°"
+                if Verificador_EsIgual == 18:
+                    datos_direction = grados +" "+ aux
+                if Verificador_EsIgual == 20:
+                    Porcen = aux
+                if Verificador_EsIgual == 21:
+                    datos_cloud = Porcen + " % de " + aux
+                if Verificador_EsIgual == 22:
+                    if aux == "no":
+                        datos_precipitation = "No"
+                    else:
+                        datos_precipitation = "Si"
+
+        elif cad[i] is "=" and Verificador_EsIgual != Lugar_de_info:  #__ Si no es el "=" que pido, sigue sumando uno hasta que sea.
+            Verificador_EsIgual += 1
+#========================== Creacion de objetos =========================#
+    ObjCiudad = Ciudad(datos_city,datos_coord_lon,datos_coord_lat,datos_sun_rise,datos_sun_set,datos_fecha)
+    ObjWind = Wind(datos_speed,datos_speed_tipo,datos_direction)
+    ObjEstado_Tiempo = Estado_Tiempo(ObjCiudad,datos_value,datos_min,datos_max,datos_pressure,datos_humidity,ObjWind,datos_cloud,datos_precipitation)
+    print(ObjEstado_Tiempo)
+#====================== Clases sobre la informacion ======================#
+class Ciudad:
+    def __init__(self,datos_city,datos_coord_lon,datos_coord_lat,datos_sun_rise,datos_sun_set,datos_fecha):
+        self.city = datos_city
+        self.coord_lon = datos_coord_lon
+        self.coord_lat = datos_coord_lat
+        self.sun_rise = datos_sun_rise
+        self.sun_set = datos_sun_set
+        self.fecha = datos_fecha
+
+class Wind:
+    def __init__(self,datos_speed,datos_speed_tipo,datos_direction):
+        self.speed = datos_speed
+        self.tipo = datos_speed_tipo
+        self.direction = datos_direction
+
+class Estado_Tiempo:
+    def __init__(self,ObjCiudad,datos_value,datos_min,datos_max,datos_pressure,datos_humidity,ObjWind,datos_cloud,datos_precipitation): #,ObjWind
+        self.info_city = ObjCiudad # ____________ Objeto
+        self.value = datos_value
+        self.min = datos_min
+        self.max = datos_max
+        self.pressure = datos_pressure
+        self.humidity = datos_humidity
+        self.info_wind = ObjWind # ______________ Objeto
+        self.cloud = datos_cloud
+        self.precipitation = datos_precipitation
+
+    def __repr__(self):
+        Titulo = "{0} [{1},{2}]".format(self.info_city.city,self.info_city.coord_lat,self.info_city.coord_lon)
+        Info = Titulo.title().upper().center(80,"=") + "\n" + self.info_city.fecha.center(80,"_") +"\n\n" + "\t\t" + "Temp. Actual: " + self.value + "\t\t" + "Min: " + self.min + "\t\t\t" + "Max: " +self.max + "\n"  \
+        + "\t\t" + "Presion: " + self.pressure + "\t\t" + "Humedad: " + self.humidity + "\t\t" + "Riesgo de lluvia: " + self.precipitation + "\n" + "\t\t\t\t\t\t" + "Nubes: " + self.cloud \
+        + "\n\n" + "Sol".center(80,"-") + "\n\n" + "\t\t\t" + "Salida del sol: " + self.info_city.sun_rise + "\t\t" +"Puesta del sol: " + self.info_city.sun_set \
+        + "\n\n" + "Viento".center(80,"-") + "\n\n" + "\t\t" + "Velocidad: " + self.info_wind.speed + "\t\t" + "Tipo: " + self.info_wind.tipo + "\t\t" + "Direccion: " + self.info_wind.direction \
+        + "\n\n" + "".center(80,"=")
+        return Info
+#========================= Ejecutor del programa =========================#
+opcion = "s"
+while opcion == "s":
+    ubicacion = (input("Ingrese la ciudad: ") + "," + input("Ingrese el codigo de pais: ").upper())  # Ciudad,Codigo Pais
+    set_datos(XML(ubicacion))
+    opcion = input("Quiere consultar otro estado? (s/n): ")
+if opcion == "n":
+    print("===================================")
+    print("Gracias por utilizar la aplicacion!")
+    print("===================================")
+#=========================== Fin del programa ============================#
