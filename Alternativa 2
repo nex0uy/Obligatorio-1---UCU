@@ -1,0 +1,72 @@
+#=============================== PROGRAMA QUE VERIFICA UN XML SOBRE TIEMPO Y DEVUELVE LA INFORMACION UTIL ===============================#
+
+#================================ Funcion que llama al XML desde el servidor web ====================================#
+def XML(ubicacion):
+    import urllib.request
+    url = "http://api.openweathermap.org/data/2.5/weather"
+    APPID = "13e13d4dd6fdcc4d7fcde335109b74f8"
+    modo = "xml"
+    response = urllib.request.urlopen(url + "?q=" + ubicacion + "&APPID=" + APPID + "&mode=" + modo);
+    cad = response.read().decode("UTF-8")
+    return cad
+#====================== Funcion que pasa a lista los datos utiles ======================#
+def set_datos(cad):
+    Datos = cad.split('"')[1:50:2]
+    if Datos[22] == "no": #DEPENDE SI LLUEVE O NO, DATO QUE TIRA
+        Lluvia = "No"
+    else:
+        Lluvia = "Si"
+#========================== Creacion de objetos =========================#
+    ObjCiudad = Ciudad(Datos[1],Datos[2],Datos[3],Datos[4][11:20],Datos[5][11:20],Datos[4][8:10] + "-" + Datos[4][5:7] + "-" + Datos[4][0:4])# CIUDAD,LATITUD,LONGITUD,SALIDA DEL SOL, PUESTA DEL SOL, FECHA DEL DIA DE HOY.
+    ObjWind = Wind(Datos[14]+ " m/s",Datos[15],Datos[16] + "° " + Datos[17]) # VELOCIDAD,TIPO DEL VIENTO, DIRECCION DEL VIENTO
+    ObjEstado_Tiempo = Estado_Tiempo(ObjCiudad,str(int(float(Datos[6]) - 273.15)) + "°C",str(int(float(Datos[7]) - 273.15)) + "°C",str(int(float(Datos[8]) - 273.15)) + "°C"\
+                       ,Datos[12]+ " hPa",Datos[10]+ " %",ObjWind,Datos[19] + "% de " + Datos[20],Lluvia) #OBJETO CIUDAD,GRADOS ACTUALES,GRADOS MINIMOS,GRADOS MAXIMOS, PRESION, HUMEDAD,OBJETO VIENTO, NUBOSIDAD,LLUVIA.
+    print(ObjEstado_Tiempo)
+#====================== Clases sobre la informacion ======================#
+class Ciudad:
+    def __init__(self,datos_city,datos_coord_lon,datos_coord_lat,datos_sun_rise,datos_sun_set,datos_fecha):
+        self.city = datos_city
+        self.coord_lon = datos_coord_lon
+        self.coord_lat = datos_coord_lat
+        self.sun_rise = datos_sun_rise
+        self.sun_set = datos_sun_set
+        self.fecha = datos_fecha
+
+class Wind:
+    def __init__(self,datos_speed,datos_speed_tipo,datos_direction):
+        self.speed = datos_speed
+        self.tipo = datos_speed_tipo
+        self.direction = datos_direction
+
+class Estado_Tiempo:
+    def __init__(self,ObjCiudad,datos_value,datos_min,datos_max,datos_pressure,datos_humidity,ObjWind,datos_cloud,datos_precipitation): #,ObjWind
+        self.info_city = ObjCiudad # ____________ Objeto
+        self.value = datos_value
+        self.min = datos_min
+        self.max = datos_max
+        self.pressure = datos_pressure
+        self.humidity = datos_humidity
+        self.info_wind = ObjWind # ______________ Objeto
+        self.cloud = datos_cloud
+        self.precipitation = datos_precipitation
+
+    def __repr__(self):
+        Titulo = "{0} [{1},{2}]".format(self.info_city.city,self.info_city.coord_lat,self.info_city.coord_lon)
+        Info = Titulo.title().upper().center(80,"=") + "\n" + self.info_city.fecha.center(80,"_") +"\n\n" + "\t\t" + "Temp. Actual: " + self.value + "\t\t" + "Min: " + self.min + "\t\t\t" + "Max: " +self.max + "\n"  \
+        + "\t\t" + "Presion: " + self.pressure + "\t\t" + "Humedad: " + self.humidity + "\t\t" + "Riesgo de lluvia: " + self.precipitation + "\n" + "\t\t\t\t\t\t" + "Nubes: " + self.cloud \
+        + "\n\n" + "Sol".center(80,"-") + "\n\n" + "\t\t\t" + "Salida del sol: " + self.info_city.sun_rise + "\t\t" +"Puesta del sol: " + self.info_city.sun_set \
+        + "\n\n" + "Viento".center(80,"-") + "\n\n" + "\t\t" + "Velocidad: " + self.info_wind.speed + "\t\t" + "Tipo: " + self.info_wind.tipo + "\t\t" + "Direccion: " + self.info_wind.direction \
+        + "\n\n" + "".center(80,"=")
+        return Info
+#========================= Ejecutor del programa =========================#
+opcion = "s"
+while opcion == "s":
+    ubicacion = (input("Ingrese la ciudad: ") + "," + input("Ingrese el codigo de pais: ").upper())  # Ciudad,Codigo Pais
+    set_datos(XML(ubicacion))
+    opcion = input("Quiere consultar otro estado? (s/n): ")
+if opcion == "n":
+    print("===================================")
+    print("Gracias por utilizar la aplicacion!")
+    print("===================================")
+#=========================== Fin del programa ============================#
+
